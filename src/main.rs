@@ -60,8 +60,8 @@ impl Player {
         let sid_speed = if sid_file.speed == 0 { 50 } else { 100 };
         let speed = Duration::from_millis(1000 / sid_speed);
         let mut memory = PlayerMemory::new();
-        println!("load address: {}", sid_file.load_address);
-        memory.load(&sid_file.data, sid_file.load_address as u16);
+        println!("load address: {}", sid_file.real_load_address);
+        memory.load(&sid_file.data, sid_file.real_load_address as u16);
 
         let cpu = CPU::new(Box::new(memory));
 
