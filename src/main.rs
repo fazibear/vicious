@@ -38,9 +38,9 @@ impl PlayerMemory {
     }
 
     pub fn load(&mut self, data: &[u8], offset: u16) {
-        data.iter()
-            .enumerate()
-            .for_each(|(i, &b)| self.write((offset + i as u16), b));
+        for (i, &b) in data.iter().enumerate() {
+            self.write(offset as u16 + i as u16, b);
+        }
     }
 }
 
@@ -54,16 +54,20 @@ pub struct Player {
 
 impl Player {
     pub fn new(data: &[u8]) -> Self {
-        let sid_file = SidFile::parse(&data).expect("failed to read sid file");
+        let sid_file = SidFile::parse(data).expect("failed to read sid file");
         //println!("sid file: {:?}", sid_file);
         let current_song = sid_file.start_song;
         let sid_speed = if sid_file.speed == 0 { 50 } else { 100 };
         let speed = Duration::from_millis(1000 / sid_speed);
         let mut memory = PlayerMemory::new();
         println!("load address: {}", sid_file.real_load_address);
-        memory.load(&sid_file.data, sid_file.real_load_address as u16);
+        
+        memory.load(&sid_file.data, sid_file.real_load_address);
+        
+        //println!("{:?}", memory);
 
         let cpu = CPU::new(Box::new(memory));
+        
 
         Self {
             playing: false,
@@ -76,7 +80,7 @@ impl Player {
 
     pub fn init(&mut self) {
         if self.sid_file.play_address == 0 {
-            self.jump_subroutine(self.sid_file.init_address as u16, 0);
+            self.jump_subroutine(self.sid_file.init_address, 0);
             self.sid_file.play_address = ((self.cpu.get_memory_at(0x0315) as u16) << 8) + self.cpu.get_memory_at(0x0314) as u16;
             println!("new play_addr: {:04x}", self.sid_file.play_address);
         }
@@ -93,7 +97,7 @@ impl Player {
             println!("init address: {}", self.sid_file.init_address);
             println!("current song: {}", self.current_song - 1);
             self.jump_subroutine(
-                self.sid_file.init_address as u16,
+                self.sid_file.init_address,
                 (self.current_song - 1) as u8,
             );
         }
@@ -129,8 +133,9 @@ impl Player {
         self.cpu.push(0);
         
         while self.cpu.registers.program_counter > 1 {
-            let stepc=  self.cpu.step();
-            //println!("Cycles: {}", stepc);
+            println!("{}", self.cpu.registers.program_counter);
+            let stepc =  self.cpu.step();
+            println!("Cycles: {}", stepc);
             cycles += stepc;
         }
         //println!("------------------------------------");
