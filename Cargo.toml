@@ -1,0 +1,16 @@
+[package]
+name = "vicious"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+mos6510 = { path = "../mos6510" }
+sid_file = { path = "../sid_file" }
+clap = { version="4.0.15", features = ["derive"] }
+resid-rs = "1.1.1"
+cpal = "0.15.0"
+ringbuf = "0.3.3"
+anyhow = "1.0"
+spinners = "4.1.0"
