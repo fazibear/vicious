@@ -60,9 +60,9 @@ fn main() {
             break;
         }
 
-        let mut delta: u32 = player.samples_per_frame * 100 / 2;
+        let mut delta: u32 = player.samples_per_frame/2 * 90;
         while delta > 0 {
-            let mut buffer = [0i16; 441];
+            let mut buffer = [0i16; 1];
             let (samples, next_delta) = player.cpu.sid.as_mut().samples(delta, &mut buffer[..]);
             prod.push_slice(&buffer[..samples]);
             delta = next_delta;

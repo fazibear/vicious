@@ -26,7 +26,7 @@ impl Player {
     pub fn new(data: &[u8]) -> Self {
         let sid_file = SidFile::parse(data).expect("failed to read sid file");
         let current_song = sid_file.start_song;
-        let speed = Duration::from_millis(1000 / 50);
+        let speed = Duration::from_millis(1000 / 60);
 
         let chip = match sid_file.flags {
             Some(flags) => flags.sid_model,
@@ -47,7 +47,7 @@ impl Player {
         let cpu = CPU::new(Box::new(memory), Box::new(sid));
 
         let mut refresh_cia = (20000.0
-            * (cpu.get_memory_at(0xdc04) as u16 | ((cpu.get_memory_at(0xdc05) as u16) << 8)) as f32
+            * cpu.read_word(0xdc04) as f32
             / 0x4c00 as f32)
             .floor() as u16;
 
@@ -70,8 +70,7 @@ impl Player {
     pub fn init(&mut self) {
         if self.sid_file.play_address == 0 {
             self.jump_subroutine(self.sid_file.init_address, 0);
-            self.sid_file.play_address = ((self.cpu.get_memory_at(0x0315) as u16) << 8)
-                + self.cpu.get_memory_at(0x0314) as u16;
+            self.sid_file.play_address = self.cpu.read_word(0x0314);
         }
         self.cpu.sid.write(24, 15); // turn up volume
 
@@ -80,12 +79,12 @@ impl Player {
     
     pub fn info(&self) {
         println!("------------------------------------");
-        println!("{color_yellow}Song: {color_blue}{}{color_reset}", self.sid_file.name);
-        println!("{color_yellow}Author: {color_blue}{}{color_reset}", self.sid_file.author);
+        println!("{color_yellow}Song:     {color_blue}{}{color_reset}", self.sid_file.name);
+        println!("{color_yellow}Author:   {color_blue}{}{color_reset}", self.sid_file.author);
         println!("{color_yellow}Released: {color_blue}{}{color_reset}", self.sid_file.released);
-        println!("{color_yellow}Number of Songs: {color_blue}{}{color_reset}", self.sid_file.songs);
+        println!("{color_yellow}Songs:    {color_blue}{}{color_reset}", self.sid_file.songs);
         println!("------------------------------------");
-        println!("{color_cyan}Data length: {color_green}{}{color_reset}", self.sid_file.data.len());
+        println!("{color_cyan}Data length:  {color_green}{}{color_reset}", self.sid_file.data.len());
         println!("{color_cyan}Init address: {color_green}0x{:04x}{color_reset}", self.sid_file.init_address);
         println!("{color_cyan}Play address: {color_green}0x{:04x}{color_reset}", self.sid_file.play_address);
         println!("{color_cyan}Load address: {color_green}0x{:04x}{color_reset}", self.sid_file.load_address);
