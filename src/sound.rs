@@ -16,15 +16,15 @@ impl Sound {
         let device = host
             .default_output_device()
             .expect("failed to find output device");
-        println!("Output device: {}", device.name()?);
-
         let supported_config = device.default_output_config().unwrap();
-        println!("Supported stream config: {:?}", supported_config);
-
         let config = supported_config.into();
-        println!("Stream config: {:?}", config);
-
         Ok(Self { device, config })
+    }
+    
+    pub fn info(&self) {
+        println!("Output device: {}", self.device.name().unwrap());
+        println!("Supported stream config: {:?}", self.device.default_output_config().unwrap());
+        println!("Stream config: {:?}", self.config);
     }
 
     // pub fn stream(&self, dev_fn: impl FnMut(&mut [f32], &OutputCallbackInfo)) -> Result<(), Box<dyn std::error::Error>> {

@@ -50,8 +50,9 @@ fn main() {
 
     let mut player = Player::new(&data);
     player.init();
+    player.info();
+    sound.info();
 
-    println!("samples per frame: {}", player.samples_per_frame);
     loop {
         let now = Instant::now();
 
