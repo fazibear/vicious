@@ -22,5 +22,3 @@ impl PlayerSid {
         Self { sid }
     }
 }
-
-

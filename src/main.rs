@@ -3,9 +3,9 @@ use std::time::Instant;
 
 use ringbuf::HeapRb;
 
-mod sid;
 mod memory;
 mod player;
+mod sid;
 mod sound;
 
 use player::Player;
@@ -15,7 +15,6 @@ use cpal::{
     traits::{DeviceTrait, StreamTrait},
     Sample,
 };
-
 
 fn main() {
     let filename = std::env::args().nth(1).expect("no filename given");
@@ -42,7 +41,8 @@ fn main() {
         }
     };
 
-    let stream = sound.device
+    let stream = sound
+        .device
         .build_output_stream(&sound.config, dev_rn, err_fn, None)
         .unwrap();
 
@@ -63,9 +63,7 @@ fn main() {
         while delta > 0 {
             let mut buffer = [0i16; 441];
             let (samples, next_delta) = player.cpu.sid.as_mut().samples(delta, &mut buffer[..]);
-            (0..samples).for_each(|sample| {
-                prod.push(buffer[sample]).expect("za duzo danych");
-            });
+            prod.push_slice(&buffer[..samples]);
             delta = next_delta;
         }
         if prod.len() > 44100 / 2 {

@@ -8,9 +8,8 @@ use sid_file::SidFile;
 
 use resid::ChipModel;
 
-use crate::sid::PlayerSid;
 use crate::memory::PlayerMemory;
-
+use crate::sid::PlayerSid;
 
 pub struct Player {
     pub playing: bool,
@@ -27,13 +26,15 @@ impl Player {
         let current_song = sid_file.start_song;
         println!("sid file type: {:?}", sid_file.file_type);
         let speed = Duration::from_millis(1000 / 50);
-        
+
         let chip = match sid_file.flags {
             Some(flags) => flags.sid_model,
             _ => sid_file::ChipModel::MOS8580,
         };
-        
-        let model = match chip { 
+
+        println!("chip: {:?}", chip);
+
+        let model = match chip {
             sid_file::ChipModel::MOS6581 => ChipModel::Mos6581,
             _ => ChipModel::Mos8580,
         };
@@ -139,5 +140,3 @@ impl Player {
     //     );
     // }
 }
-
-
