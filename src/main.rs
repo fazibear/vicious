@@ -16,6 +16,8 @@ use cpal::{
     Sample,
 };
 
+const BUFFER_SIZE: usize = 44100;
+
 fn main() {
     let filename = std::env::args().nth(1).expect("no filename given");
     let path = std::path::Path::new(&filename);
@@ -53,22 +55,25 @@ fn main() {
     player.info();
     sound.info();
 
+    let mut now: Instant;
+    
     loop {
-        let now = Instant::now();
+        now = Instant::now();
 
         if player.step() {
             break;
         }
 
-        let mut delta: u32 = player.samples_per_frame/2 * 90;
+        let mut delta: u32 = player.samples_per_frame * 45;
         while delta > 0 {
-            let mut buffer = [0i16; 1];
+            let mut buffer = [0i16; BUFFER_SIZE];
             let (samples, next_delta) = player.cpu.sid.as_mut().samples(delta, &mut buffer[..]);
             prod.push_slice(&buffer[..samples]);
             delta = next_delta;
         }
-        if prod.len() > 44100 / 2 {
-            thread::sleep(player.speed - now.elapsed());
+       
+        if let ((BUFFER_SIZE..),  Some(time)) = (prod.len(), player.speed.checked_sub(now.elapsed())) { 
+            thread::sleep(time) 
         }
     }
 }
