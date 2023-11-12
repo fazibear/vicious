@@ -44,7 +44,7 @@ impl Player {
 
         memory.load(&sid_file.data, sid_file.real_load_address);
 
-        let cpu = CPU::new(Box::new(memory), Box::new(sid));
+        let cpu = CPU::new(Box::new(memory), Box::new(sid), false);
 
         let mut refresh_cia = (20000.0
             * cpu.read_word(0xdc04) as f32
@@ -133,21 +133,9 @@ impl Player {
         self.cpu.push(0);
 
         while self.cpu.registers.program_counter > 1 {
-            let stepc = self.cpu.step();
-            cycles += stepc;
+            let step_count = self.cpu.step();
+            cycles += step_count;
         }
         cycles
     }
-
-    // pub fn debug(&self) {
-    //     println!(
-    //         "{} {} {} {} {} {}",
-    //         self.cpu.registers.x,
-    //         self.cpu.registers.y,
-    //         self.cpu.registers.accumulator,
-    //         self.cpu.registers.stack_pointer,
-    //         self.cpu.status_flags.to_byte(),
-    //         self.cpu.registers.stack_pointer
-    //     );
-    // }
 }

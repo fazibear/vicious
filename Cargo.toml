@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 mos6510 = { path = "../mos6510" }
 sid_file = { path = "../sid_file" }
+resid-rs = { path = "../../resid-rs" }
 clap = { version="4.0.15", features = ["derive"] }
-resid-rs = "1.1.1"
 cpal = "0.15.0"
 ringbuf = "0.3.3"
 anyhow = "1.0"
