@@ -1,11 +1,9 @@
-use std::thread;
-use std::time::Instant;
-
+use anyhow::Result;
 use ringbuf::HeapRb;
+use std::{thread, time::Instant};
 
 mod memory;
 mod player;
-mod sid;
 mod sound;
 
 use player::Player;
@@ -16,17 +14,17 @@ use cpal::{
     Sample,
 };
 
-const BUFFER_SIZE: usize = 44100;
+const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
 
-fn main() {
-    let filename = std::env::args().nth(1).expect("no filename given");
+fn main() -> Result<()> {
+    let filename = std::env::args().nth(1).unwrap_or("".to_string());
     let path = std::path::Path::new(&filename);
-    let data = std::fs::read(path).expect("failed to read file");
+    let data = std::fs::read(path)?;
 
     let buffer = HeapRb::<i16>::new(44100 * 2);
     let (mut prod, mut cons) = buffer.split();
 
-    let sound = Sound::new().expect("failed to initialize sound");
+    let sound = Sound::new()?;
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
     let dev_rn = move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
@@ -35,7 +33,7 @@ fn main() {
             return;
         }
         for samples in data.chunks_mut(2) {
-            let val = cons.pop().expect("za mao danych");
+            let val = cons.pop().unwrap();
             let sample_val = i16::from_sample(val).to_sample::<f32>();
             for sample in samples {
                 *sample = sample_val;
@@ -45,18 +43,16 @@ fn main() {
 
     let stream = sound
         .device
-        .build_output_stream(&sound.config, dev_rn, err_fn, None)
-        .unwrap();
+        .build_output_stream(&sound.config, dev_rn, err_fn, None)?;
 
     let _ = stream.play();
 
-    let mut player = Player::new(&data);
+    let mut player = Player::new(&data)?;
     player.init();
     player.info();
-    sound.info();
+    sound.info()?;
 
     let mut now: Instant;
-    
     loop {
         now = Instant::now();
 
@@ -64,16 +60,23 @@ fn main() {
             break;
         }
 
-        let mut delta: u32 = player.samples_per_frame * 45;
+        let mut delta: u32 = 22050;
         while delta > 0 {
             let mut buffer = [0i16; BUFFER_SIZE];
-            let (samples, next_delta) = player.cpu.sid.as_mut().samples(delta, &mut buffer[..]);
+            let (samples, next_delta) =
+                player
+                    .memory
+                    .borrow_mut()
+                    .sid_sample(delta, &mut buffer[..], 1);
             prod.push_slice(&buffer[..samples]);
             delta = next_delta;
         }
-       
-        if let ((BUFFER_SIZE..),  Some(time)) = (prod.len(), player.speed.checked_sub(now.elapsed())) { 
-            thread::sleep(time) 
+
+        if let ((BUFFER_SIZE..), Some(time)) = (prod.len(), player.speed.checked_sub(now.elapsed()))
+        {
+            thread::sleep(time)
         }
     }
+
+    Ok(())
 }

@@ -1,32 +1,30 @@
+use crate::memory::PlayerMemory;
+use anyhow::Result;
+use inline_colorization::*;
 use mos6510::registers::Registers;
 use mos6510::status_flags::StatusFlags;
 use mos6510::CPU;
-
-use std::time::Duration;
-
-use sid_file::SidFile;
-
 use resid::ChipModel;
-
-use crate::memory::PlayerMemory;
-use crate::sid::PlayerSid;
-
-use inline_colorization::*;
+use sid_file::SidFile;
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::time::Duration;
 
 pub struct Player {
     pub playing: bool,
     pub sid_file: SidFile,
     pub cpu: CPU,
+    pub memory: Rc<RefCell<PlayerMemory>>,
     pub current_song: u16,
     pub speed: Duration,
-    pub samples_per_frame: u32,
+    // pub samples_per_frame: u32,
 }
 
 impl Player {
-    pub fn new(data: &[u8]) -> Self {
-        let sid_file = SidFile::parse(data).expect("failed to read sid file");
+    pub fn new(data: &[u8]) -> Result<Self> {
+        let sid_file = SidFile::parse(data)?;
         let current_song = sid_file.start_song;
-        let speed = Duration::from_millis(1000 / 60);
+        let speed = Duration::from_millis(1000 / 50);
 
         let chip = match sid_file.flags {
             Some(flags) => flags.sid_model,
@@ -38,33 +36,28 @@ impl Player {
             _ => ChipModel::Mos8580,
         };
 
-        let sid = PlayerSid::new(model);
+        let memory = Rc::new(RefCell::new(PlayerMemory::new(model)));
 
-        let mut memory = PlayerMemory::new();
+        memory
+            .borrow_mut()
+            .load(&sid_file.data, sid_file.real_load_address);
 
-        memory.load(&sid_file.data, sid_file.real_load_address);
+        let cpu = CPU::new(memory.clone(), false);
 
-        let cpu = CPU::new(Box::new(memory), Box::new(sid), false);
+        // let mut refresh_cia = (20000.0 * cpu.read_word(0xdc04) as f32 / 0x4c00 as f32).floor() as u16;
+        // if refresh_cia == 0 || sid_file.speed == 0 {
+        //     refresh_cia = 20000;
+        // }
+        // let samples_per_frame = (44100.0 / 2.0 * refresh_cia as f64 / 1000000.0).floor() as u32;
 
-        let mut refresh_cia = (20000.0
-            * cpu.read_word(0xdc04) as f32
-            / 0x4c00 as f32)
-            .floor() as u16;
-
-        if refresh_cia == 0 || sid_file.speed == 0 {
-            refresh_cia = 20000;
-        }
-
-        let samples_per_frame = (44100.0 / 2.0 * refresh_cia as f64 / 1000000.0).floor() as u32;
-
-        Self {
+        Ok(Self {
             playing: false,
             sid_file,
             cpu,
             current_song,
             speed,
-            samples_per_frame,
-        }
+            memory: memory.clone(),
+        })
     }
 
     pub fn init(&mut self) {
@@ -72,23 +65,51 @@ impl Player {
             self.jump_subroutine(self.sid_file.init_address, 0);
             self.sid_file.play_address = self.cpu.read_word(0x0314);
         }
-        self.cpu.sid.write(24, 15); // turn up volume
+
+        self.memory.borrow_mut().sid.write(24, 15);
 
         self.change_track(self.sid_file.start_song);
     }
-    
+
     pub fn info(&self) {
         println!("------------------------------------");
-        println!("{color_yellow}Song:     {color_blue}{}{color_reset}", self.sid_file.name);
-        println!("{color_yellow}Author:   {color_blue}{}{color_reset}", self.sid_file.author);
-        println!("{color_yellow}Released: {color_blue}{}{color_reset}", self.sid_file.released);
-        println!("{color_yellow}Songs:    {color_blue}{}{color_reset}", self.sid_file.songs);
+        println!(
+            "{color_yellow}Song:     {color_blue}{}{color_reset}",
+            self.sid_file.name
+        );
+        println!(
+            "{color_yellow}Author:   {color_blue}{}{color_reset}",
+            self.sid_file.author
+        );
+        println!(
+            "{color_yellow}Released: {color_blue}{}{color_reset}",
+            self.sid_file.released
+        );
+        println!(
+            "{color_yellow}Songs:    {color_blue}{}{color_reset}",
+            self.sid_file.songs
+        );
         println!("------------------------------------");
-        println!("{color_cyan}Data length:  {color_green}{}{color_reset}", self.sid_file.data.len());
-        println!("{color_cyan}Init address: {color_green}0x{:04x}{color_reset}", self.sid_file.init_address);
-        println!("{color_cyan}Play address: {color_green}0x{:04x}{color_reset}", self.sid_file.play_address);
-        println!("{color_cyan}Load address: {color_green}0x{:04x}{color_reset}", self.sid_file.load_address);
-        println!("{color_cyan}Real load address: {color_green}0x{:04x}{color_reset}", self.sid_file.real_load_address);
+        println!(
+            "{color_cyan}Data length:  {color_green}{}{color_reset}",
+            self.sid_file.data.len()
+        );
+        println!(
+            "{color_cyan}Init address: {color_green}0x{:04x}{color_reset}",
+            self.sid_file.init_address
+        );
+        println!(
+            "{color_cyan}Play address: {color_green}0x{:04x}{color_reset}",
+            self.sid_file.play_address
+        );
+        println!(
+            "{color_cyan}Load address: {color_green}0x{:04x}{color_reset}",
+            self.sid_file.load_address
+        );
+        println!(
+            "{color_cyan}Real load address: {color_green}0x{:04x}{color_reset}",
+            self.sid_file.real_load_address
+        );
         println!("------------------------------------");
         if let Some(flags) = self.sid_file.flags {
             println!("Clock speed: {:?}", flags.clock);
@@ -117,7 +138,7 @@ impl Player {
     }
 
     pub fn step(&mut self) -> bool {
-        self.jump_subroutine(self.sid_file.play_address, 0) == 0
+        0 == self.jump_subroutine(self.sid_file.play_address, 0)
     }
 
     pub fn jump_subroutine(&mut self, program_counter: u16, accumulator: u8) -> u64 {

@@ -13,18 +13,19 @@ pub struct Sound {
 impl Sound {
     pub fn new() -> Result<Self> {
         let host = cpal::default_host();
-        let device = host
-            .default_output_device()
-            .expect("failed to find output device");
-        let supported_config = device.default_output_config().unwrap();
+        let device = host.default_output_device().expect("no output device available");
+        let supported_config = device.default_output_config()?;
         let config = supported_config.into();
+        
         Ok(Self { device, config })
     }
     
-    pub fn info(&self) {
-        println!("Output device: {}", self.device.name().unwrap());
-        println!("Supported stream config: {:?}", self.device.default_output_config().unwrap());
-        println!("Stream config: {:?}", self.config);
+    pub fn info(&self) -> Result<()> {
+        eprintln!("Output device: {}", self.device.name()?);
+        eprintln!("Supported stream config: {:?}", self.device.default_output_config()?);
+        eprintln!("Stream config: {:?}", self.config);
+
+        Ok(())
     }
 
     // pub fn stream(&self, dev_fn: impl FnMut(&mut [f32], &OutputCallbackInfo)) -> Result<(), Box<dyn std::error::Error>> {

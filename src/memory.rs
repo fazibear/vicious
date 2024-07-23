@@ -1,7 +1,11 @@
+use resid::ChipModel;
+use resid::Sid;
+
 use mos6510::memory::Memory;
 
 pub struct PlayerMemory {
     pub memory: [u8; 65536],
+    pub sid: Sid,
 }
 
 impl Memory for PlayerMemory {
@@ -10,18 +14,30 @@ impl Memory for PlayerMemory {
     }
 
     fn write(&mut self, address: u16, value: u8) {
-        self.memory[address as usize] = value;
+        if (address & 0xfc00) == 0xd400 {
+            //println!("lusid.poke({}, {})", address & 0x1f, value);
+            self.sid.write((address & 0x1f) as u8, value);
+        } else {
+            self.memory[address as usize] = value;
+        }
     }
 }
 
 impl PlayerMemory {
-    pub fn new() -> Self {
-        Self { memory: [0; 65536] }
+    pub fn new(model: ChipModel) -> Self {
+        Self {
+            memory: [0; 65536],
+            sid: Sid::new(model),
+        }
     }
 
     pub fn load(&mut self, data: &[u8], offset: u16) {
         for (i, &b) in data.iter().enumerate() {
             self.write(offset + i as u16, b);
         }
+    }
+
+    pub fn sid_sample(&mut self, delta: u32, buffer: &mut [i16], channels: usize) -> (usize, u32) {
+        self.sid.sample(delta, buffer, channels)
     }
 }
