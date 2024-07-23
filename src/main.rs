@@ -1,18 +1,17 @@
-use anyhow::Result;
-use ringbuf::HeapRb;
-use std::{thread, time::Instant};
-
 mod memory;
 mod player;
 mod sound;
 
-use player::Player;
-use sound::Sound;
-
+use anyhow::Result;
 use cpal::{
     traits::{DeviceTrait, StreamTrait},
     Sample,
 };
+use player::Player;
+use ringbuf::traits::{Consumer, Observer, Producer, Split};
+use ringbuf::HeapRb;
+use sound::Sound;
+use std::{thread, time::Instant};
 
 const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
 
@@ -28,12 +27,12 @@ fn main() -> Result<()> {
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
     let dev_rn = move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-        if data.len() / 2 > cons.len() {
+        if data.len() / 2 > cons.occupied_len() {
             println!("ups!");
             return;
         }
         for samples in data.chunks_mut(2) {
-            let val = cons.pop().unwrap();
+            let val = cons.try_pop().unwrap();
             let sample_val = i16::from_sample(val).to_sample::<f32>();
             for sample in samples {
                 *sample = sample_val;
@@ -72,7 +71,8 @@ fn main() -> Result<()> {
             delta = next_delta;
         }
 
-        if let ((BUFFER_SIZE..), Some(time)) = (prod.len(), player.speed.checked_sub(now.elapsed()))
+        if let ((BUFFER_SIZE..), Some(time)) =
+            (prod.occupied_len(), player.speed.checked_sub(now.elapsed()))
         {
             thread::sleep(time)
         }
