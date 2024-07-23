@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 sid_file.workspace = true
 mos6510.workspace = true
-anyhow.workspace = true
 
+anyhow = "1.0"
 resid-rs = { path = "../../resid-rs" }
 clap = { version="4.5", features = ["derive"] }
 cpal = "0.15"
