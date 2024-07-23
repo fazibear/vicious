@@ -42,12 +42,7 @@ impl Player {
             .borrow_mut()
             .load(&sid_file.data, sid_file.real_load_address);
 
-        let mut cpu = CPU::new(memory.clone());
-        let step_callback = |cpu: &CPU| {
-            println!("{:?}", cpu.registers);
-        };
-
-        cpu.set_step_callback(Box::new(step_callback));
+        let cpu = CPU::new(memory.clone());
 
         // let mut refresh_cia = (20000.0 * cpu.read_word(0xdc04) as f32 / 0x4c00 as f32).floor() as u16;
         // if refresh_cia == 0 || sid_file.speed == 0 {
