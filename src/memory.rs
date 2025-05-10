@@ -1,4 +1,5 @@
 use resid::ChipModel;
+use resid::SamplingMethod;
 use resid::Sid;
 
 use mos6510rs::memory::Memory;
@@ -24,10 +25,12 @@ impl Memory for PlayerMemory {
 }
 
 impl PlayerMemory {
-    pub fn new(model: ChipModel) -> Self {
+    pub fn new(model: ChipModel, sample_rate: u32) -> Self {
+        let mut sid = Sid::new(model);
+        sid.set_sampling_parameters(SamplingMethod::Fast, 985_248, sample_rate);
         Self {
             memory: [0; 65536],
-            sid: Sid::new(model),
+            sid,
         }
     }
 

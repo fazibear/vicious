@@ -24,7 +24,7 @@ impl Player {
     pub fn new(data: &[u8]) -> Result<Self> {
         let sid_file = SidFile::parse(data)?;
         let current_song = sid_file.start_song;
-        let speed = Duration::from_millis(1000 / 50);
+        let speed = Duration::from_millis(1000 / 60);
 
         let chip = match sid_file.flags {
             Some(flags) => flags.sid_model,
@@ -36,7 +36,7 @@ impl Player {
             _ => ChipModel::Mos8580,
         };
 
-        let memory = Rc::new(RefCell::new(PlayerMemory::new(model)));
+        let memory = Rc::new(RefCell::new(PlayerMemory::new(model, 48000)));
 
         memory
             .borrow_mut()

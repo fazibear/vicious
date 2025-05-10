@@ -8,13 +8,15 @@ default-run = "gui"
 sid_file = "0.1"
 mos6510rs = "0.1"
 anyhow = "1.0"
-resid-rs = { git = "https://github.com/fazibear/resid-rs", branch = "fix-overflows" }
+#resid-rs = { git = "https://github.com/fazibear/resid-rs", branch = "fix-overflows" }
+resid-rs = "1.1"
 cpal = "0.15"
 ringbuf = "0.4"
 inline_colorization = "0.1.6"
 eframe = "0.31"
 egui_extras = { version = "0.31", features = ["image"]}
-env_logger = "0.11"
+log = "0.4"
+pretty_env_logger = "0.5"
 rb = "0.4"
 
 [[bin]]
@@ -24,4 +26,8 @@ path = "src/gui.rs"
 [[bin]]
 name = "cli"
 path = "src/cli.rs"
+
+[[bin]]
+name = "old"
+path = "src/old.rs"
 
