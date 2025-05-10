@@ -5,7 +5,7 @@ use cpal::{
     Device, Sample, Stream, StreamConfig,
 };
 
-use rb::{RbConsumer, RbProducer, SpscRb, RB};
+use rb::{RbConsumer, RbInspector, RbProducer, SpscRb, RB};
 
 pub struct Sound {
     pub device: Device,
@@ -32,7 +32,7 @@ impl Sound {
                 &config,
                 move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                     let mut tmp: Vec<i16> = vec![0; data.len() / 2];
-                    let _readed = consumer.read(&mut tmp[..]).unwrap_or(0);
+                    let readed = consumer.read(&mut tmp[..]).unwrap_or(0);
                     //  let new = tmp.iter().map(|&s| f32::from_sample(s)).collect::<Vec<_>>();
 
                     let new = tmp
@@ -75,14 +75,7 @@ impl Sound {
         self.buffer.producer().write_blocking(data);
     }
 
-    // pub fn stream(&self, dev_fn: impl FnMut(&mut [f32], &OutputCallbackInfo)) -> Result<(), Box<dyn std::error::Error>> {
-    //     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
-    //
-    //     let stream = self.device
-    //         .build_output_stream(&self.config, dev_fn, err_fn, None)?;
-    //
-    //     stream.play()?;
-    //
-    //     Ok(())
-    // }
+    pub fn count(&self) -> usize {
+        self.buffer.count()
+    }
 }

@@ -3,13 +3,8 @@ mod player;
 mod sound;
 
 use anyhow::Result;
-use cpal::{
-    traits::{DeviceTrait, StreamTrait},
-    Sample,
-};
+use cpal::traits::StreamTrait;
 use player::Player;
-use ringbuf::traits::{Consumer, Observer, Producer, Split};
-use ringbuf::HeapRb;
 use sound::Sound;
 use std::{thread, time::Instant};
 
@@ -46,6 +41,12 @@ fn main() -> Result<()> {
                     .sid_sample(delta, &mut buffer[..], 1);
             sound.write_blocking(&buffer[..samples]);
             delta = next_delta;
+        }
+
+        if let (Some(time), BUFFER_SIZE..) =
+            (player.speed.checked_sub(now.elapsed()), sound.count())
+        {
+            thread::sleep(time)
         }
     }
 
