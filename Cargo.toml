@@ -1,15 +1,27 @@
 [package]
 name = "vicious"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+default-run = "gui"
 
 [dependencies]
 sid_file = "0.1"
 mos6510rs = "0.1"
 anyhow = "1.0"
 resid-rs = { git = "https://github.com/fazibear/resid-rs", branch = "fix-overflows" }
-clap = { version="4.5", features = ["derive"] }
 cpal = "0.15"
 ringbuf = "0.4"
-spinners = "4.1"
 inline_colorization = "0.1.6"
+eframe = "0.31"
+egui_extras = { version = "0.31", features = ["image"]}
+env_logger = "0.11"
+rb = "0.4"
+
+[[bin]]
+name = "gui"
+path = "src/gui.rs"
+
+[[bin]]
+name = "cli"
+path = "src/cli.rs"
+
