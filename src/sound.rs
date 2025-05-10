@@ -14,6 +14,8 @@ pub struct Sound {
     pub buffer: SpscRb<i16>,
 }
 
+const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
+
 impl Sound {
     pub fn new() -> Result<Self> {
         let host = cpal::default_host();
@@ -23,7 +25,7 @@ impl Sound {
         let supported_config = device.default_output_config()?;
         let config = supported_config.into();
 
-        let buffer = SpscRb::new(1024);
+        let buffer = SpscRb::new(BUFFER_SIZE);
 
         let consumer = buffer.consumer();
 
@@ -33,7 +35,6 @@ impl Sound {
                 move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                     let mut tmp: Vec<i16> = vec![0; data.len() / 2];
                     let readed = consumer.read(&mut tmp[..]).unwrap_or(0);
-                    //  let new = tmp.iter().map(|&s| f32::from_sample(s)).collect::<Vec<_>>();
 
                     let new = tmp
                         .iter()
@@ -43,7 +44,7 @@ impl Sound {
                         })
                         .collect::<Vec<_>>();
 
-                    data.copy_from_slice(&new);
+                    data.copy_from_slice(&new[..]);
                 },
                 move |err| {
                     dbg!("audio output error: {}", err);
