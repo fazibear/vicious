@@ -1,7 +1,7 @@
 use resid::ChipModel;
 use resid::Sid;
 
-use mos6510::memory::Memory;
+use mos6510rs::memory::Memory;
 
 pub struct PlayerMemory {
     pub memory: [u8; 65536],

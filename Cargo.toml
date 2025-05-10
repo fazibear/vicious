@@ -1,14 +1,13 @@
 [package]
-name = "player"
+name = "vicious"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sid_file.workspace = true
-mos6510.workspace = true
-
+sid_file = "0.1"
+mos6510rs = "0.1"
 anyhow = "1.0"
-resid-rs = { path = "../../resid-rs" }
+resid-rs = { git = "https://github.com/fazibear/resid-rs", branch = "fix-overflows" }
 clap = { version="4.5", features = ["derive"] }
 cpal = "0.15"
 ringbuf = "0.4"

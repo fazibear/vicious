@@ -1,9 +1,9 @@
 use crate::memory::PlayerMemory;
 use anyhow::Result;
 use inline_colorization::*;
-use mos6510::registers::Registers;
-use mos6510::status_flags::StatusFlags;
-use mos6510::CPU;
+use mos6510rs::registers::Registers;
+use mos6510rs::status_flags::StatusFlags;
+use mos6510rs::CPU;
 use resid::ChipModel;
 use sid_file::SidFile;
 use std::cell::RefCell;
