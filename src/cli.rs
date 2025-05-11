@@ -10,12 +10,6 @@ use log::*;
 use player::Player;
 use sid_file::SidFile;
 use sound::Sound;
-use std::{
-    thread,
-    time::{Duration, Instant},
-};
-
-const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
 
 fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -27,50 +21,25 @@ fn main() -> Result<()> {
     let _ = sound.stream.play();
 
     let mut player = Player::new(&data)?;
-    player.init();
-    info(player.sid_file());
-    sound_info(&sound)?;
-    let dur = Duration::from_millis(1000 / 50);
-    let mut now: Instant = Instant::now();
-    loop {
-        if now.elapsed() < dur {
-            //thread::sleep(Duration::from_millis(1));
-            continue;
-        }
+    player.play();
 
-        if player.step() {
+    print_info(player.sid_file());
+    print_sound_info(&sound)?;
+
+    loop {
+        if !player.playing {
             break;
         }
 
-        now = Instant::now();
-
-        let mut delta: u32 = 20000;
-        while delta > 0 {
-            let mut buffer = [0i16; BUFFER_SIZE];
-            let (samples, next_delta) =
-                player
-                    .memory
-                    .borrow_mut()
-                    .sid_sample(delta, &mut buffer[..], 1);
-            let wnow = Instant::now();
-            sound.write_blocking(&buffer[..samples]);
-            //println!("in {:?}", &buffer[..10]);
-            info!("Write {} samples in {:?}.", samples, wnow.elapsed());
-            delta = next_delta;
+        if let Some(data) = player.data() {
+            sound.write_blocking(&data[..]);
         }
-
-        // if let ((BUFFER_SIZE..), Some(time)) =
-        //     (sound.count(), player.speed.checked_sub(now.elapsed()))
-        // {
-        //     info!("Sleep {:?}", time);
-        //     thread::sleep(time)
-        // }
     }
 
     Ok(())
 }
 
-pub fn info(sid_file: &SidFile) {
+pub fn print_info(sid_file: &SidFile) {
     println!("------------------------------------");
     println!(
         "{color_yellow}Song:     {color_blue}{}{color_reset}",
@@ -131,7 +100,7 @@ pub fn info(sid_file: &SidFile) {
     }
 }
 
-pub fn sound_info(sound: &Sound) -> Result<()> {
+pub fn print_sound_info(sound: &Sound) -> Result<()> {
     eprintln!("Output device: {}", sound.device.name()?);
     eprintln!(
         "Supported stream config: {:?}",
