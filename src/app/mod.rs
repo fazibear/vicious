@@ -1,4 +1,5 @@
 use eframe::{
+    egui,
     egui::{CentralPanel, Context, Slider},
     Frame,
 };
@@ -19,18 +20,25 @@ impl Default for App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        CentralPanel::default().show(ctx, |ui| {
-            ui.heading("My egui Application");
-            ui.horizontal(|ui| {
-                let name_label = ui.label("Your name: ");
-                ui.text_edit_singleline(&mut self.name)
-                    .labelled_by(name_label.id);
-            });
-            ui.add(Slider::new(&mut self.age, 0..=120).text("age"));
-            if ui.button("Increment").clicked() {
-                self.age += 1;
-            }
-            ui.label(format!("Hello '{}', age {}", self.name, self.age));
+        egui::TopBottomPanel::top("Player").show(ctx, |ui| {
+            //PlayerComponent::add(self, ui);
+            //ScopeComponent::add(self, ui);
+        });
+
+        egui::TopBottomPanel::bottom("Footer").show(ctx, |ui| {
+            //Footer::add(self, ui);
+        });
+
+        egui::CentralPanel::default().show(ctx, |_ui| {
+            egui::SidePanel::left("Library Window")
+                .default_width(350.0)
+                .show(ctx, |ui| {
+                    //LibraryComponent::add(self, ui);
+                });
+        });
+
+        egui::CentralPanel::default().show(ctx, |_ui| {
+            egui::CentralPanel::default().show(ctx, |ui| {});
         });
     }
 }
