@@ -15,8 +15,6 @@ pub struct Sound {
     pub buffer: SpscRb<i16>,
 }
 
-const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
-
 impl Sound {
     pub fn new() -> Result<Self> {
         let host = cpal::default_host();
@@ -75,17 +73,6 @@ impl Sound {
             stream,
             buffer,
         })
-    }
-
-    pub fn info(&self) -> Result<()> {
-        eprintln!("Output device: {}", self.device.name()?);
-        eprintln!(
-            "Supported stream config: {:?}",
-            self.device.default_output_config()?
-        );
-        eprintln!("Stream config: {:?}", self.config);
-
-        Ok(())
     }
 
     pub fn write_blocking(&mut self, data: &[i16]) {

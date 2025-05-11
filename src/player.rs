@@ -1,6 +1,5 @@
 use crate::memory::PlayerMemory;
 use anyhow::Result;
-use inline_colorization::*;
 use mos6510rs::registers::Registers;
 use mos6510rs::status_flags::StatusFlags;
 use mos6510rs::CPU;
@@ -8,7 +7,7 @@ use resid::ChipModel;
 use sid_file::SidFile;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub struct Player {
     pub playing: bool,
@@ -18,6 +17,7 @@ pub struct Player {
     pub current_song: u16,
     pub speed: Duration,
     // pub samples_per_frame: u32,
+    pub last_step: Instant,
 }
 
 impl Player {
@@ -57,6 +57,7 @@ impl Player {
             current_song,
             speed,
             memory: memory.clone(),
+            last_step: Instant::now(),
         })
     }
 
@@ -71,55 +72,6 @@ impl Player {
         self.change_track(self.sid_file.start_song);
     }
 
-    pub fn info(&self) {
-        println!("------------------------------------");
-        println!(
-            "{color_yellow}Song:     {color_blue}{}{color_reset}",
-            self.sid_file.name
-        );
-        println!(
-            "{color_yellow}Author:   {color_blue}{}{color_reset}",
-            self.sid_file.author
-        );
-        println!(
-            "{color_yellow}Released: {color_blue}{}{color_reset}",
-            self.sid_file.released
-        );
-        println!(
-            "{color_yellow}Songs:    {color_blue}{}{color_reset}",
-            self.sid_file.songs
-        );
-        println!("------------------------------------");
-        println!(
-            "{color_cyan}Data length:  {color_green}{}{color_reset}",
-            self.sid_file.data.len()
-        );
-        println!(
-            "{color_cyan}Init address: {color_green}0x{:04x}{color_reset}",
-            self.sid_file.init_address
-        );
-        println!(
-            "{color_cyan}Play address: {color_green}0x{:04x}{color_reset}",
-            self.sid_file.play_address
-        );
-        println!(
-            "{color_cyan}Load address: {color_green}0x{:04x}{color_reset}",
-            self.sid_file.load_address
-        );
-        println!(
-            "{color_cyan}Real load address: {color_green}0x{:04x}{color_reset}",
-            self.sid_file.real_load_address
-        );
-        println!("------------------------------------");
-        if let Some(flags) = self.sid_file.flags {
-            println!("Clock speed: {:?}", flags.clock);
-            println!("SID model 1: {:?}", flags.sid_model);
-            println!("SID model 2: {:?}", flags.sid_model);
-            println!("SID model 3: {:?}", flags.sid_model);
-            println!("------------------------------------");
-        }
-    }
-
     pub fn change_track(&mut self, track: u16) {
         if track > 0 && track <= self.sid_file.songs {
             self.stop();
@@ -129,16 +81,21 @@ impl Player {
         }
     }
 
-    // pub fn play(&mut self) {
-    //     self.playing = true;
-    // }
+    pub fn play(&mut self) {
+        self.playing = true;
+    }
 
     pub fn stop(&mut self) {
         self.playing = false;
     }
 
     pub fn step(&mut self) -> bool {
+        self.last_step = Instant::now();
         0 == self.jump_subroutine(self.sid_file.play_address, 0)
+    }
+
+    pub fn sid_file(&self) -> &SidFile {
+        &self.sid_file
     }
 
     pub fn jump_subroutine(&mut self, program_counter: u16, accumulator: u8) -> u64 {
@@ -158,5 +115,29 @@ impl Player {
             cycles += step_count;
         }
         cycles
+    }
+
+    const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
+
+    pub fn data(&mut self) -> Option<Vec<i16>> {
+        if self.last_step.elapsed() < self.speed {
+            return None;
+        }
+
+        self.step();
+
+        let mut delta: u32 = 20000;
+        let mut buffer = vec![0; Self::BUFFER_SIZE];
+        let mut samples_count = 0;
+        while delta > 0 {
+            let (samples, next_delta) =
+                self.memory
+                    .borrow_mut()
+                    .sid_sample(delta, &mut buffer[samples_count..], 1);
+            samples_count = samples;
+            delta = next_delta;
+        }
+        buffer.resize(samples_count, 0);
+        Some(buffer)
     }
 }
