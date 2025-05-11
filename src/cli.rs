@@ -1,3 +1,4 @@
+mod app;
 mod memory;
 mod player;
 mod sound;
