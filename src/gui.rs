@@ -1,12 +1,12 @@
 mod app;
+mod playback;
 mod player;
-mod sound;
 
 use app::App;
 use eframe::egui::ViewportBuilder;
 use eframe::NativeOptions;
+use playback::Playback;
 use player::Player;
-use sound::Sound;
 
 fn main() -> eframe::Result {
     pretty_env_logger::init();

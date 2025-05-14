@@ -7,10 +7,10 @@ use eframe::{
     Frame,
 };
 
-use crate::{player::Player, sound::Sound};
+use crate::{playback::Playback, player::Player};
 
 pub struct App {
-    sound: Sound,
+    playback: Playback,
     player: Player,
 }
 
@@ -26,13 +26,13 @@ impl App {
         let path = std::path::Path::new(&filename);
         let data = std::fs::read(path)?;
 
-        let sound = Sound::new()?;
+        let playback = Playback::new()?;
         let mut player = Player::new();
 
         player.load_data(&data)?;
         player.play();
 
-        Ok(Self { sound, player })
+        Ok(Self { playback, player })
     }
 
     pub fn step(&mut self) {
@@ -41,7 +41,7 @@ impl App {
         }
 
         if let Some(data) = self.player.data() {
-            self.sound.write_blocking(&data[..]);
+            self.playback.write_blocking(&data[..]);
         }
     }
 }

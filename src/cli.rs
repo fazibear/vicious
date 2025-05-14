@@ -1,13 +1,12 @@
+mod playback;
 mod player;
-mod sound;
 
 use anyhow::Result;
 use cpal::traits::{DeviceTrait, StreamTrait};
 use inline_colorization::*;
-use log::*;
+use playback::Playback;
 use player::Player;
 use sid_file::SidFile;
-use sound::Sound;
 
 fn main() -> Result<()> {
     pretty_env_logger::init();
@@ -15,7 +14,7 @@ fn main() -> Result<()> {
     let path = std::path::Path::new(&filename);
     let data = std::fs::read(path)?;
 
-    let mut sound = Sound::new()?;
+    let mut sound = Playback::new()?;
     let _ = sound.stream.play();
 
     let mut player = Player::new();
@@ -99,7 +98,7 @@ pub fn print_info(sid_file: &SidFile) {
     }
 }
 
-pub fn print_sound_info(sound: &Sound) -> Result<()> {
+pub fn print_sound_info(sound: &Playback) -> Result<()> {
     eprintln!("Output device: {}", sound.device.name()?);
     eprintln!(
         "Supported stream config: {:?}",

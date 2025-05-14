@@ -8,14 +8,14 @@ use cpal::{
 use log::info;
 use rb::{RbConsumer, RbInspector, RbProducer, SpscRb, RB};
 
-pub struct Sound {
+pub struct Playback {
     pub device: Device,
     pub config: StreamConfig,
     pub stream: Stream,
     pub buffer: SpscRb<i16>,
 }
 
-impl Sound {
+impl Playback {
     pub fn new() -> Result<Self> {
         let host = cpal::default_host();
         let device = host
