@@ -1,8 +1,14 @@
 mod app;
+mod memory;
+mod player;
+mod sound;
 
 use app::App;
 use eframe::egui::ViewportBuilder;
 use eframe::NativeOptions;
+use memory::PlayerMemory;
+use player::Player;
+use sound::Sound;
 
 fn main() -> eframe::Result {
     pretty_env_logger::init();

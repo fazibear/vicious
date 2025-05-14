@@ -1,11 +1,10 @@
-mod app;
 mod memory;
 mod player;
 mod sound;
-use inline_colorization::*;
 
 use anyhow::Result;
 use cpal::traits::{DeviceTrait, StreamTrait};
+use inline_colorization::*;
 use log::*;
 use player::Player;
 use sid_file::SidFile;

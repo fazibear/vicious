@@ -93,6 +93,10 @@ impl Player {
     }
 
     pub fn step(&mut self) {
+        println!(
+            "{:?}",
+            (Instant::now() - self.last_step.elapsed()).elapsed()
+        );
         if self.playing && 0 == self.jump_subroutine(self.sid_file.play_address, 0) {
             self.playing = false;
         }
@@ -108,6 +112,8 @@ impl Player {
         if self.last_step.elapsed() < self.speed {
             return None;
         }
+
+        println!("OK");
 
         if !self.playing {
             return None;
