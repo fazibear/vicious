@@ -1,18 +1,17 @@
-use crate::memory::PlayerMemory;
 use anyhow::Result;
-use mos6510rs::registers::Registers;
-use mos6510rs::status_flags::StatusFlags;
-use mos6510rs::CPU;
+use mos6510rs::{Registers, StatusFlags, CPU};
+use resid::{SamplingMethod, Sid};
 use sid_file::{Clock, Flags, SidFile};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 pub struct Player {
+    pub cpu: CPU,
+    pub sid: Rc<RefCell<Sid>>,
+
     pub playing: bool,
     pub sid_file: SidFile,
-    pub cpu: CPU,
-    pub memory: Rc<RefCell<PlayerMemory>>,
     pub current_song: u16,
     pub speed: Duration,
     // pub samples_per_frame: u32,
@@ -39,16 +38,22 @@ impl Player {
             }) => resid::ChipModel::Mos6581,
             _ => resid::ChipModel::Mos8580,
         };
+        let sid = Rc::new(RefCell::new(Sid::new(model)));
+        sid.borrow_mut()
+            .set_sampling_parameters(SamplingMethod::Fast, 985_248, 48000);
 
-        let memory = Rc::new(RefCell::new(PlayerMemory::new(model, 48000)));
+        sid.borrow_mut().write(24, 15);
 
-        memory
-            .borrow_mut()
-            .load(&sid_file.data, sid_file.real_load_address);
+        let mut cpu = CPU::new();
 
-        memory.borrow_mut().sid.write(24, 15);
+        let cpu_sid = sid.clone();
+        cpu.set_write_byte_callback(Box::new(move |address, value| {
+            if (address & 0xfc00) == 0xd400 {
+                cpu_sid.borrow_mut().write((address & 0x1f) as u8, value);
+            }
+        }));
 
-        let cpu = CPU::new(memory.clone());
+        cpu.write_slice(&sid_file.data, sid_file.real_load_address);
 
         // let mut refresh_cia = (20000.0 * cpu.read_word(0xdc04) as f32 / 0x4c00 as f32).floor() as u16;
         // if refresh_cia == 0 || sid_file.speed == 0 {
@@ -59,10 +64,10 @@ impl Player {
         Ok(Self {
             playing: false,
             sid_file,
+            sid,
             cpu,
             current_song,
             speed,
-            memory: memory.clone(),
             last_step: Instant::now(),
         })
     }
@@ -127,9 +132,9 @@ impl Player {
         let mut samples_count = 0;
         while delta > 0 {
             let (samples, next_delta) =
-                self.memory
+                self.sid
                     .borrow_mut()
-                    .sid_sample(delta, &mut buffer[samples_count..], 1);
+                    .sample(delta, &mut buffer[samples_count..], 1);
             samples_count = samples;
             delta = next_delta;
         }
