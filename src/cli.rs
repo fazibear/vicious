@@ -18,7 +18,8 @@ fn main() -> Result<()> {
     let mut sound = Sound::new()?;
     let _ = sound.stream.play();
 
-    let mut player = Player::new(&data)?;
+    let mut player = Player::new();
+    player.load_data(&data)?;
     player.play();
 
     print_info(player.sid_file());
