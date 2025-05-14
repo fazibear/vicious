@@ -27,8 +27,9 @@ impl App {
         let data = std::fs::read(path)?;
 
         let sound = Sound::new()?;
-        let mut player = Player::new(&data)?;
+        let mut player = Player::new();
 
+        player.load_data(&data)?;
         player.play();
 
         Ok(Self { sound, player })
