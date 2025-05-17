@@ -1,15 +1,14 @@
 use anyhow::Result;
 use mos6510rs::{Registers, StatusFlags, CPU};
 use resid::{SamplingMethod, Sid};
-use sid_file::{Clock, Flags, SidFile};
-use std::cell::RefCell;
-use std::rc::Rc;
+use sid_file::SidFile;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 pub struct Player {
     pub speed: Duration,
     pub cpu: CPU,
-    pub sid: Rc<RefCell<Sid>>,
+    pub sid: Arc<Mutex<Sid>>,
     pub playing: bool,
     pub last_step: Instant,
     pub sid_file: Option<SidFile>,
@@ -17,18 +16,24 @@ pub struct Player {
 
 impl Player {
     pub fn new() -> Self {
-        let sid = Rc::new(RefCell::new(Sid::new(resid::ChipModel::Mos8580)));
-        sid.borrow_mut()
-            .set_sampling_parameters(SamplingMethod::Fast, 985_248, 48000);
+        let sid = Arc::new(Mutex::new(Sid::new(resid::ChipModel::Mos8580)));
+        sid.lock().expect("to unlock").set_sampling_parameters(
+            SamplingMethod::Fast,
+            985_248,
+            48000,
+        );
 
-        sid.borrow_mut().write(24, 15);
+        sid.lock().expect("to lock").write(24, 15);
 
         let mut cpu = CPU::new();
 
         let cpu_sid = sid.clone();
         cpu.set_write_byte_callback(Box::new(move |address, value| {
             if (address & 0xfc00) == 0xd400 {
-                cpu_sid.borrow_mut().write((address & 0x1f) as u8, value);
+                cpu_sid
+                    .lock()
+                    .expect("to lock")
+                    .write((address & 0x1f) as u8, value);
             }
         }));
 
@@ -131,7 +136,8 @@ impl Player {
         while delta > 0 {
             let (samples, next_delta) =
                 self.sid
-                    .borrow_mut()
+                    .lock()
+                    .expect("to lock")
                     .sample(delta, &mut buffer[samples_count..], 1);
             samples_count = samples;
             delta = next_delta;

@@ -1,17 +1,19 @@
+use std::fs::File;
+
 use anyhow::Result;
 use eframe::{
-    egui::{self, Context, ScrollArea},
+    egui::{self, CollapsingHeader, Context, ScrollArea, Ui},
     Frame,
 };
+use serde_json::Value;
 
-use crate::{files::Files, playback::Playback, player::Player};
+use crate::{playback::Playback, player::Player};
 
 pub struct App {
     playback: Playback,
     player: Player,
-    volume: f32,
     status: String,
-    files: Files,
+    json: Value,
 }
 
 impl Default for App {
@@ -25,17 +27,17 @@ impl App {
         let playback = Playback::new()?;
         let player = Player::new();
 
-        let volume = 1.0;
         let status = "Started...".to_owned();
 
-        let files = Files::new();
+        let file = File::open("/Users/fazibear/dev/vicious/c64Music.json")
+            .expect("file should open read only");
+        let json: Value = serde_json::from_reader(file).expect("file should be proper JSON");
 
         Ok(Self {
             playback,
             player,
-            volume,
             status,
-            files,
+            json,
         })
     }
 
@@ -61,37 +63,78 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         ctx.request_repaint();
+        self.step();
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             egui::SidePanel::right("right_panel").show_inside(ui, |ui| {
+                let length = if let Some(file) = &self.player.sid_file {
+                    &format!("0x{:04x}", file.data.len())
+                } else {
+                    ""
+                };
+                let init_address = if let Some(file) = &self.player.sid_file {
+                    &format!("0x{:04x}", file.init_address)
+                } else {
+                    ""
+                };
+                let play_address = if let Some(file) = &self.player.sid_file {
+                    &format!("0x{:04x}", file.play_address)
+                } else {
+                    ""
+                };
+                let load_address = if let Some(file) = &self.player.sid_file {
+                    &format!("0x{:04x}", file.load_address)
+                } else {
+                    ""
+                };
                 egui::Grid::new("song_addteses")
                     .num_columns(2)
                     .show(ui, |ui| {
                         ui.label("Data length");
-                        ui.label("0x0000");
+                        ui.label(length);
                         ui.end_row();
                         ui.label("Init address:");
-                        ui.label("0x0000");
+                        ui.label(init_address);
                         ui.end_row();
                         ui.label("Play address:");
-                        ui.label("0x0000");
+                        ui.label(play_address);
                         ui.end_row();
                         ui.label("Load address:");
-                        ui.label("0x0000");
+                        ui.label(load_address);
                         ui.end_row();
                     });
             });
             egui::Grid::new("song_info").num_columns(2).show(ui, |ui| {
+                let song = if let Some(file) = &self.player.sid_file {
+                    &file.name
+                } else {
+                    ""
+                };
+                let author = if let Some(file) = &self.player.sid_file {
+                    &file.author
+                } else {
+                    ""
+                };
+                let released = if let Some(file) = &self.player.sid_file {
+                    &file.released
+                } else {
+                    ""
+                };
+                let songs = if let Some(file) = &self.player.sid_file {
+                    &format!("{}", &file.songs)
+                } else {
+                    ""
+                };
                 ui.label("Song:");
-                ui.label("terefere tralalala bum");
+                ui.label(song);
                 ui.end_row();
                 ui.label("Author:");
-                ui.label("the bytels");
+                ui.label(author);
                 ui.end_row();
                 ui.label("Released:");
-                ui.label("1998");
+                ui.label(released);
                 ui.end_row();
                 ui.label("Number of songs:");
-                ui.label("10");
+                ui.label(songs);
                 ui.end_row();
             });
         });
@@ -99,19 +142,19 @@ impl eframe::App for App {
             .min_height(40.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
-                    let prev_btn = ui.button("|◀");
-                    let prev_btn = ui.button("◀◀");
-                    let play_btn = ui.button("▶");
-                    let pause_btn = ui.button("⏸");
-                    let stop_btn = ui.button("■");
-                    let next_btn = ui.button("▶▶");
-                    let next_btn = ui.button("▶|");
-                    let volume_slider = ui.add(
-                        eframe::egui::Slider::new(&mut self.volume, (0.0 as f32)..=(1.2 as f32))
-                            .logarithmic(false)
-                            .show_value(false)
-                            .step_by(0.01),
-                    );
+                    if ui.button("|◀").clicked() {};
+                    if ui.button("◀◀").clicked() {};
+                    if ui.button("▶").clicked() {};
+                    if ui.button("⏸").clicked() {};
+                    if ui.button("■").clicked() {};
+                    if ui.button("▶▶").clicked() {};
+                    if ui.button("▶|").clicked() {};
+                    // let volume_slider = ui.add(
+                    //     eframe::egui::Slider::new(&mut self.volume, (0.0 as f32)..=(1.2 as f32))
+                    //         .logarithmic(false)
+                    //         .show_value(false)
+                    //         .step_by(0.01),
+                    // );
                 });
             });
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
@@ -120,8 +163,56 @@ impl eframe::App for App {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
-                self.files.show(ui);
+                self.show(ui);
             });
         });
+    }
+}
+
+impl App {
+    pub fn add_dir(&mut self, ui: &mut Ui, value: &Value) {
+        if let Some(vv) = value.get("type") {
+            match vv.as_str() {
+                Some("directory") => {
+                    let zero = Value::from(0);
+                    let empty = Vec::new();
+
+                    let contents = value
+                        .get("children")
+                        .unwrap_or(&zero)
+                        .as_array()
+                        .unwrap_or(&empty);
+
+                    if !contents.is_empty() {
+                        CollapsingHeader::new(value.get("name").unwrap().as_str().unwrap())
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                for v in contents {
+                                    self.add_dir(ui, v);
+                                }
+                            });
+                    } else {
+                        //println!("{:?}", value);
+                    }
+                }
+                Some("file") => {
+                    let name = value.get("name").unwrap().as_str().unwrap();
+                    let link = ui.link(name);
+                    if link.clicked() {
+                        let path = value.get("path").unwrap().as_str().unwrap();
+                        self.status = if let Ok(()) = self.load(path) {
+                            format!("[OK] {} loaded!", name)
+                        } else {
+                            format!("[ERROR] Can't load {}!", name)
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub fn show(&mut self, ui: &mut Ui) {
+        self.add_dir(ui, &self.json.to_owned());
     }
 }

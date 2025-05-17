@@ -1,5 +1,4 @@
 mod app;
-mod files;
 mod playback;
 mod player;
 

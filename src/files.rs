@@ -4,20 +4,18 @@ use eframe::egui::{CollapsingHeader, Ui};
 use egui_ltreeview::{TreeView, TreeViewBuilder};
 use serde_json::Value;
 
-pub struct Files {
-    json: Value,
-}
+pub struct Files;
 
 impl Files {
-    pub fn new() -> Self {
-        let file = File::open("/Users/fazibear/dev/vicious/c64Music.json")
-            .expect("file should open read only");
-        let json: Value = serde_json::from_reader(file).expect("file should be proper JSON");
-        //let json: Value = Value::from(1);
-        Self { json }
-    }
+    // pub fn new() -> Self {
+    //     let file = File::open("/Users/fazibear/dev/vicious/c64Music.json")
+    //         .expect("file should open read only");
+    //     let json: Value = serde_json::from_reader(file).expect("file should be proper JSON");
+    //     //let json: Value = Value::from(1);
+    //     Self { json }
+    // }
 
-    pub fn add_dir(&mut self, ui: &mut Ui, value: &Value) {
+    pub fn add_dir(ui: &mut Ui, value: &Value) {
         if let Some(vv) = value.get("type") {
             match vv.as_str() {
                 Some("directory") => {
@@ -25,7 +23,7 @@ impl Files {
                     let empty = Vec::new();
 
                     let contents = value
-                        .get("contents")
+                        .get("children")
                         .unwrap_or(&zero)
                         .as_array()
                         .unwrap_or(&empty);
@@ -43,7 +41,8 @@ impl Files {
                     }
                 }
                 Some("file") => {
-                    ui.link(value.get("name").unwrap().as_str().unwrap());
+                    let link = ui.link(value.get("name").unwrap().as_str().unwrap());
+                    if link.clicked() {}
                 }
                 x => {
                     println!("{:?}", x);
@@ -56,8 +55,6 @@ impl Files {
 
     pub fn show(&mut self, ui: &mut Ui) {
         let json = self.json.clone();
-        for v in json.as_array().unwrap() {
-            self.add_dir(ui, v);
-        }
+        self.add_dir(ui, &json);
     }
 }
