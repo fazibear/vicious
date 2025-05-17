@@ -1,4 +1,5 @@
 mod app;
+mod files;
 mod playback;
 mod player;
 
@@ -15,7 +16,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "My egui App",
+        "Vicious",
         options,
         Box::new(|_cc| Ok(Box::<App>::default())),
     )
