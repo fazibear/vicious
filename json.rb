@@ -35,6 +35,5 @@ def entry_hash(path)
 end
 
 tree = entry_hash(root)
-#File.write('C64Music.json', tree.to_json)
-puts JSON.pretty_generate(tree)
 
+File.write('C64Music.json', tree.to_json)
