@@ -15,11 +15,11 @@ fn main() -> eframe::Result {
     };
 
     let app = Box::<App>::default();
-    // let sid_player_thread = app.sid_player.clone();
-    //
-    // std::thread::spawn(move || loop {
-    //     sid_player_thread.lock().step();
-    // });
+    let sid_player_thread = app.sid_player.clone();
+
+    std::thread::spawn(move || loop {
+        sid_player_thread.lock().step();
+    });
 
     eframe::run_native("Vicious", options, Box::new(|_cc| Ok(app)))
 }

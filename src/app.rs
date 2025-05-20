@@ -35,11 +35,6 @@ impl App {
 
         let sid_player = Arc::new(Mutex::new(sid_player));
 
-        let sid_player_thread = sid_player.clone();
-        std::thread::spawn(move || loop {
-            sid_player_thread.lock().step();
-        });
-
         Ok(Self {
             sid_file,
             sid_player,
