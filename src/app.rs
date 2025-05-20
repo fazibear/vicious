@@ -46,7 +46,7 @@ impl App {
     }
 
     pub fn load(&mut self, filename: &str) -> Result<()> {
-        let data = files::open(filename)?;
+        let data = files::open(filename);
         let sid_file = SidFile::parse(&data)?;
 
         self.sid_player.lock().load_data(
