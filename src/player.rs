@@ -3,14 +3,11 @@ use mos6510rs::{Registers, StatusFlags, CPU};
 use resid::{SamplingMethod, Sid};
 use sid_file::SidFile;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
 
 pub struct Player {
-    pub speed: Duration,
     pub cpu: CPU,
     pub sid: Arc<Mutex<Sid>>,
     pub playing: bool,
-    pub last_step: Instant,
     pub sid_file: Option<SidFile>,
 }
 
@@ -37,14 +34,10 @@ impl Player {
             }
         }));
 
-        let speed = Duration::from_millis(1000 / 50);
-
         Self {
             playing: false,
             sid,
             cpu,
-            last_step: Instant::now(),
-            speed,
             sid_file: None,
         }
     }
@@ -105,10 +98,6 @@ impl Player {
     }
 
     pub fn step(&mut self) {
-        println!(
-            "{:?}",
-            (Instant::now() - self.last_step.elapsed()).elapsed()
-        );
         if self.playing && 0 == self.jump_subroutine(self.sid_file().play_address, 0) {
             self.playing = false;
         }
@@ -117,10 +106,6 @@ impl Player {
     const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
 
     pub fn data(&mut self) -> Option<Vec<i16>> {
-        if self.last_step.elapsed() < self.speed {
-            return None;
-        }
-
         println!("OK");
 
         if !self.playing {
@@ -128,7 +113,6 @@ impl Player {
         }
 
         self.step();
-        self.last_step = Instant::now();
 
         let mut delta: u32 = 20000;
         let mut buffer = vec![0; Self::BUFFER_SIZE];

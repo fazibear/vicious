@@ -29,9 +29,12 @@ impl App {
 
         let status = "Started...".to_owned();
 
-        let file = File::open("/Users/fazibear/dev/vicious/c64Music.json")
-            .expect("file should open read only");
-        let json: Value = serde_json::from_reader(file).expect("file should be proper JSON");
+        // let file = File::open("/home/m.kalbarczy2/dev/vicious/C64Music.json")
+        //     .expect("file should open read only");
+        // let json: Value = serde_json::from_reader(file).expect("file should be proper JSON");
+
+        let file = include_str!("/home/m.kalbarczy2/dev/vicious/C64Music.json");
+        let json: Value = serde_json::from_str(file).expect("file should be proper JSON");
 
         Ok(Self {
             playback,
