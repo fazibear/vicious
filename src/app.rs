@@ -1,4 +1,4 @@
-use crate::{output::Output, sid_player::SidPlayer};
+use crate::{files, output::Output, sid_player::SidPlayer};
 use anyhow::Result;
 use eframe::{
     egui::{self, mutex::Mutex, CollapsingHeader, Context, ScrollArea, Ui},
@@ -7,7 +7,7 @@ use eframe::{
 use rb::{SpscRb, RB};
 use serde_json::Value;
 use sid_file::SidFile;
-use std::{fs::File, sync::Arc};
+use std::sync::Arc;
 
 pub struct App {
     sid_file: Option<SidFile>,
@@ -29,9 +29,7 @@ impl App {
         let output = Output::new(buffer.consumer())?;
         let sid_player = SidPlayer::new(buffer.producer(), output.sample_rate());
         let status = "Started...".to_owned();
-        let json_path = concat!(env!("CARGO_MANIFEST_DIR"), "/C64Music.json");
-        let file = File::open(json_path).expect("file should open");
-        let json: Value = serde_json::from_reader(file).expect("file should be proper JSON");
+        let json = files::load();
 
         let sid_player = Arc::new(Mutex::new(sid_player));
 
