@@ -14,6 +14,8 @@ pub struct App {
     sid_player: Arc<Mutex<SidPlayer>>,
     status: String,
     json: Value,
+    _buffer: SpscRb<i16>,
+    _output: Output,
 }
 
 impl Default for App {
@@ -43,6 +45,8 @@ impl App {
             sid_player,
             status,
             json,
+            _buffer: buffer,
+            _output: output,
         })
     }
 
