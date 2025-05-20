@@ -29,7 +29,7 @@ impl App {
         let output = Output::new(buffer.consumer())?;
         let sid_player = SidPlayer::new(buffer.producer(), output.sample_rate());
         let status = "Started...".to_owned();
-        let json = files::load();
+        let json = files::files();
 
         let sid_player = Arc::new(Mutex::new(sid_player));
 
@@ -47,9 +47,7 @@ impl App {
     }
 
     pub fn load(&mut self, filename: &str) -> Result<()> {
-        let path = std::path::Path::new(&filename);
-        let data = std::fs::read(path)?;
-
+        let data = files::open(filename)?;
         let sid_file = SidFile::parse(&data)?;
 
         self.sid_player.lock().load_data(
