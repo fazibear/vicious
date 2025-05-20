@@ -1,11 +1,15 @@
+mod output;
 mod playback;
 mod player;
+mod sid_player;
+
+use output::Output;
+use rb::{SpscRb, RB};
+use sid_player::SidPlayer;
 
 use anyhow::Result;
 use cpal::traits::{DeviceTrait, StreamTrait};
 use inline_colorization::*;
-use playback::Playback;
-use player::Player;
 use sid_file::SidFile;
 
 fn main() -> Result<()> {
@@ -14,24 +18,28 @@ fn main() -> Result<()> {
     let path = std::path::Path::new(&filename);
     let data = std::fs::read(path)?;
 
-    let mut sound = Playback::new()?;
-    let _ = sound.stream.play();
+    let sid_file = SidFile::parse(&data)?;
 
-    let mut player = Player::new();
-    player.load_data(&data)?;
-    player.play();
+    let buffer: SpscRb<i16> = SpscRb::new(44100 * 2);
 
-    print_info(player.sid_file());
-    print_sound_info(&sound)?;
+    let output = Output::new(buffer.consumer())?;
+
+    let mut sid_player = SidPlayer::new(buffer.producer(), output.sample_rate());
+
+    sid_player.load_data(
+        &sid_file.data,
+        sid_file.real_load_address,
+        sid_file.init_address,
+        sid_file.play_address,
+        sid_file.start_song,
+    );
+    sid_player.play();
+
+    print_info(&sid_file);
+    print_sound_info(&output)?;
 
     loop {
-        if !player.playing {
-            break;
-        }
-
-        if let Some(data) = player.data() {
-            sound.write_blocking(&data[..]);
-        }
+        sid_player.step();
     }
 
     Ok(())
@@ -98,7 +106,7 @@ pub fn print_info(sid_file: &SidFile) {
     }
 }
 
-pub fn print_sound_info(sound: &Playback) -> Result<()> {
+pub fn print_sound_info(sound: &Output) -> Result<()> {
     eprintln!("Output device: {}", sound.device.name()?);
     eprintln!(
         "Supported stream config: {:?}",

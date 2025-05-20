@@ -2,6 +2,9 @@ mod app;
 mod playback;
 mod player;
 
+mod output;
+mod sid_player;
+
 use app::App;
 use eframe::egui::ViewportBuilder;
 use eframe::NativeOptions;
