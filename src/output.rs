@@ -74,11 +74,13 @@ impl Output {
         self.sample_rate
     }
 
-    pub fn play(&mut self) {
-        self.stream.play();
+    pub fn play(&mut self) -> Result<()> {
+        self.stream.play()?;
+        Ok(())
     }
 
-    pub fn pause(&mut self) {
-        self.stream.pause();
+    pub fn pause(&mut self) -> Result<()> {
+        self.stream.pause()?;
+        Ok(())
     }
 }

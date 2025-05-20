@@ -59,11 +59,13 @@ impl SidPlayer {
         load_address: u16,
         init_addres: u16,
         play_address: u16,
+        songs: u16,
         current_song: u16,
     ) {
         self.init_address = init_addres;
-        self.current_song = current_song;
         self.play_address = play_address;
+        self.songs = songs;
+        self.current_song = current_song;
 
         self.cpu.write_slice(data, load_address);
 
@@ -76,13 +78,13 @@ impl SidPlayer {
 
     const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
 
-    pub fn time_for_next_step(&mut self) -> bool {
+    pub fn wait_for_next_step(&mut self) -> bool {
         if self.last_step.elapsed() < Duration::from_millis(20) {
-            return false;
+            return true;
         }
 
         if !self.playing {
-            return false;
+            return true;
         }
 
         println!(
@@ -90,15 +92,13 @@ impl SidPlayer {
             (Instant::now() - self.last_step.elapsed()).elapsed()
         );
         self.last_step = Instant::now();
-        true
+        false
     }
 
     pub fn step(&mut self) {
-        if !self.time_for_next_step() {
+        if self.wait_for_next_step() {
             return;
         }
-
-        println!("x");
 
         if self.playing && 0 == self.jump_subroutine(self.play_address, 0) {
             println!("end?");
@@ -114,24 +114,24 @@ impl SidPlayer {
                     .lock()
                     .expect("to lock")
                     .sample(delta, &mut buffer[samples_count..], 1);
-            samples_count = samples;
+            samples_count += samples;
             delta = next_delta;
         }
         //TODO
-        let _ = self.producer.write(&buffer[..samples_count]);
+        let _ = self.producer.write_blocking(&buffer[..samples_count]);
     }
 
     pub fn change_track(&mut self, track: u16) {
+        self.playing = false;
         if track > 0 && track <= self.songs {
-            //self.stop();
             self.cpu.reset();
             self.jump_subroutine(self.init_address, (track - 1) as u8);
+            self.playing = true;
         }
     }
 
     pub fn play(&mut self) {
         self.change_track(self.current_song);
-        self.playing = true;
     }
 
     fn jump_subroutine(&mut self, program_counter: u16, accumulator: u8) -> u64 {

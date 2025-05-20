@@ -1,17 +1,17 @@
-use std::fs::File;
-
+use crate::{output::Output, sid_player::SidPlayer};
 use anyhow::Result;
 use eframe::{
-    egui::{self, CollapsingHeader, Context, ScrollArea, Ui},
+    egui::{self, mutex::Mutex, CollapsingHeader, Context, ScrollArea, Ui},
     Frame,
 };
+use rb::{SpscRb, RB};
 use serde_json::Value;
-
-use crate::{playback::Playback, player::Player};
+use sid_file::SidFile;
+use std::{fs::File, sync::Arc};
 
 pub struct App {
-    playback: Playback,
-    player: Player,
+    sid_file: Option<SidFile>,
+    sid_player: Arc<Mutex<SidPlayer>>,
     status: String,
     json: Value,
 }
@@ -24,18 +24,25 @@ impl Default for App {
 
 impl App {
     pub fn new() -> Result<Self> {
-        let playback = Playback::new()?;
-        let player = Player::new();
-
+        let sid_file = None;
+        let buffer: SpscRb<i16> = SpscRb::new(44100 * 2);
+        let output = Output::new(buffer.consumer())?;
+        let sid_player = SidPlayer::new(buffer.producer(), output.sample_rate());
         let status = "Started...".to_owned();
-
-        let file = File::open("/Users/fazibear/dev/vicious/c64Music.json")
-            .expect("file should open read only");
+        let json_path = concat!(env!("CARGO_MANIFEST_DIR"), "/C64Music.json");
+        let file = File::open(json_path).expect("file should open");
         let json: Value = serde_json::from_reader(file).expect("file should be proper JSON");
 
+        let sid_player = Arc::new(Mutex::new(sid_player));
+
+        let sid_player_thread = sid_player.clone();
+        std::thread::spawn(move || loop {
+            sid_player_thread.lock().step();
+        });
+
         Ok(Self {
-            playback,
-            player,
+            sid_file,
+            sid_player,
             status,
             json,
         })
@@ -44,44 +51,44 @@ impl App {
     pub fn load(&mut self, filename: &str) -> Result<()> {
         let path = std::path::Path::new(&filename);
         let data = std::fs::read(path)?;
-        self.player.load_data(&data)?;
-        self.player.play();
+
+        let sid_file = SidFile::parse(&data)?;
+
+        self.sid_player.lock().load_data(
+            &sid_file.data,
+            sid_file.real_load_address,
+            sid_file.init_address,
+            sid_file.play_address,
+            sid_file.songs,
+            sid_file.start_song,
+        );
+        self.sid_file = Some(sid_file);
+        self.sid_player.lock().play();
         Ok(())
-    }
-
-    pub fn step(&mut self) {
-        if !self.player.playing {
-            return;
-        }
-
-        if let Some(data) = self.player.data() {
-            self.playback.write_blocking(&data[..]);
-        }
     }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         ctx.request_repaint();
-        self.step();
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             egui::SidePanel::right("right_panel").show_inside(ui, |ui| {
-                let length = if let Some(file) = &self.player.sid_file {
+                let length = if let Some(file) = &self.sid_file {
                     &format!("0x{:04x}", file.data.len())
                 } else {
                     ""
                 };
-                let init_address = if let Some(file) = &self.player.sid_file {
+                let init_address = if let Some(file) = &self.sid_file {
                     &format!("0x{:04x}", file.init_address)
                 } else {
                     ""
                 };
-                let play_address = if let Some(file) = &self.player.sid_file {
+                let play_address = if let Some(file) = &self.sid_file {
                     &format!("0x{:04x}", file.play_address)
                 } else {
                     ""
                 };
-                let load_address = if let Some(file) = &self.player.sid_file {
+                let load_address = if let Some(file) = &self.sid_file {
                     &format!("0x{:04x}", file.load_address)
                 } else {
                     ""
@@ -104,22 +111,22 @@ impl eframe::App for App {
                     });
             });
             egui::Grid::new("song_info").num_columns(2).show(ui, |ui| {
-                let song = if let Some(file) = &self.player.sid_file {
+                let song = if let Some(file) = &self.sid_file {
                     &file.name
                 } else {
                     ""
                 };
-                let author = if let Some(file) = &self.player.sid_file {
+                let author = if let Some(file) = &self.sid_file {
                     &file.author
                 } else {
                     ""
                 };
-                let released = if let Some(file) = &self.player.sid_file {
+                let released = if let Some(file) = &self.sid_file {
                     &file.released
                 } else {
                     ""
                 };
-                let songs = if let Some(file) = &self.player.sid_file {
+                let songs = if let Some(file) = &self.sid_file {
                     &format!("{}", &file.songs)
                 } else {
                     ""

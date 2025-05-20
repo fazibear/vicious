@@ -1,6 +1,4 @@
 mod output;
-mod playback;
-mod player;
 mod sid_player;
 
 use output::Output;
@@ -8,7 +6,7 @@ use rb::{SpscRb, RB};
 use sid_player::SidPlayer;
 
 use anyhow::Result;
-use cpal::traits::{DeviceTrait, StreamTrait};
+use cpal::traits::DeviceTrait;
 use inline_colorization::*;
 use sid_file::SidFile;
 
@@ -31,6 +29,7 @@ fn main() -> Result<()> {
         sid_file.real_load_address,
         sid_file.init_address,
         sid_file.play_address,
+        sid_file.songs,
         sid_file.start_song,
     );
     sid_player.play();
@@ -38,9 +37,11 @@ fn main() -> Result<()> {
     print_info(&sid_file);
     print_sound_info(&output)?;
 
-    loop {
+    let test_tread = std::thread::spawn(move || loop {
         sid_player.step();
-    }
+    });
+
+    let _ = test_tread.join();
 
     Ok(())
 }

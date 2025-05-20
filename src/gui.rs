@@ -1,15 +1,10 @@
 mod app;
-mod playback;
-mod player;
-
 mod output;
 mod sid_player;
 
 use app::App;
 use eframe::egui::ViewportBuilder;
 use eframe::NativeOptions;
-use playback::Playback;
-use player::Player;
 
 fn main() -> eframe::Result {
     pretty_env_logger::init();
