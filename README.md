@@ -10,7 +10,7 @@ Goals:
 ## Setup
 
 - `./download.sh`
-- `./json.rb` (or `./json.sh` but very slow ;)
+- `./json.rb`
 - `cargo run`
 
 ### It's nice! Isn't it?

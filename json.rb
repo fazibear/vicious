@@ -3,7 +3,9 @@
 require 'json'
 require 'time'
 require 'set'
+require 'pathname'
 
+CURRENT_DIR = Pathname.new('.')
 root = ARGV[0] || 'C64Music'
 
 unless Dir.exist?(root)
@@ -16,9 +18,8 @@ def entry_hash(path)
   entry = {
     type: stat.directory? ? 'directory' : 'file',
     name: File.basename(path),
-    path: File.expand_path(path),
+    path: Pathname.new(path).relative_path_from(CURRENT_DIR).to_s,
   }
-
   if stat.directory?
     real = File.realpath(path) rescue nil
     if real
