@@ -2,10 +2,7 @@ use log::debug;
 use mos6510rs::{Registers, StatusFlags, CPU};
 use rb::{Producer, RbProducer};
 use resid::{SamplingMethod, Sid};
-use std::{
-    sync::{Arc, Mutex},
-    time::{Duration, Instant},
-};
+use std::sync::{Arc, Mutex};
 
 pub struct SidPlayer {
     cpu: CPU,
@@ -16,7 +13,6 @@ pub struct SidPlayer {
     current_song: u16,
     producer: Producer<i16>,
     playing: bool,
-    last_step: Instant,
 }
 
 impl SidPlayer {
@@ -39,13 +35,10 @@ impl SidPlayer {
             }
         }));
 
-        let last_step = Instant::now();
-
         Self {
             sid,
             cpu,
             producer,
-            last_step,
             playing: false,
             init_address: 0,
             play_address: 0,
@@ -79,25 +72,8 @@ impl SidPlayer {
 
     const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
 
-    pub fn wait_for_next_step(&mut self) -> bool {
-        if self.last_step.elapsed() < Duration::from_millis(20) {
-            return true;
-        }
-
-        if !self.playing {
-            return true;
-        }
-
-        debug!(
-            "{:?}",
-            (Instant::now() - self.last_step.elapsed()).elapsed()
-        );
-        self.last_step = Instant::now();
-        false
-    }
-
     pub fn step(&mut self) {
-        if self.wait_for_next_step() {
+        if !self.playing {
             return;
         }
 

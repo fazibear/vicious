@@ -8,6 +8,8 @@ use eframe::egui::ViewportBuilder;
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
+    use std::time::{Duration, Instant};
+
     pretty_env_logger::init();
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default().with_inner_size([640.0, 480.0]),
@@ -16,8 +18,15 @@ fn main() -> eframe::Result {
 
     let app = Box::<App>::default();
     let sid_player_thread = app.sid_player.clone();
+    let mut last_step = Instant::now();
 
     std::thread::spawn(move || loop {
+        if last_step.elapsed() < Duration::from_millis(20) {
+            continue;
+        }
+
+        last_step = Instant::now();
+
         sid_player_thread.lock().step();
     });
 
