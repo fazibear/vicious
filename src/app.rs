@@ -198,8 +198,6 @@ impl App {
                                     self.add_dir(ui, v);
                                 }
                             });
-                    } else {
-                        //println!("{:?}", value);
                     }
                 }
                 Some("file") => {

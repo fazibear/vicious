@@ -1,3 +1,4 @@
+use log::debug;
 use mos6510rs::{Registers, StatusFlags, CPU};
 use rb::{Producer, RbProducer};
 use resid::{SamplingMethod, Sid};
@@ -87,7 +88,7 @@ impl SidPlayer {
             return true;
         }
 
-        println!(
+        debug!(
             "{:?}",
             (Instant::now() - self.last_step.elapsed()).elapsed()
         );
@@ -101,7 +102,6 @@ impl SidPlayer {
         }
 
         if self.playing && 0 == self.jump_subroutine(self.play_address, 0) {
-            println!("end?");
             self.playing = false;
         }
 
