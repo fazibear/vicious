@@ -22,7 +22,7 @@ def entry_hash(path)
   if stat.directory?
     real = File.realpath(path) rescue nil
     if real
-      children = Dir.entries(path).reject { |e| e == '.' || e == '..' }.map do |child|
+      children = Dir.entries(path).reject { |e| e == '.' || e == '..' }.sort.map do |child|
         entry_hash(File.join(path, child))
       end
       entry[:children] = children

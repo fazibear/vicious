@@ -16,8 +16,8 @@ download_and_unzip() {
   echo "Unzipping ..."
   7z x -y ${TMP_FILE}
   rm -f ${TMP_FILE}
-  rm -f ./$MUSIC_DIR/update
-  rm -f ./$MUSIC_DIR/DOCUMENTS
+  rm -rf ./$MUSIC_DIR/update
+  rm -rf ./$MUSIC_DIR/DOCUMENTS
   find ./$MUSIC_DIR ! -name '*.sid' -type f -exec rm -f {} +
 }
 
@@ -59,4 +59,5 @@ dir_to_json() {
 }
 
 download_and_unzip
-dir_to_json $MUSIC_DIR > ${MUSIC_DIR}.json
+#dir_to_json $MUSIC_DIR > ${MUSIC_DIR}.json
+./json.rb > ${MUSIC_DIR}.json
