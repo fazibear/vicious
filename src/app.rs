@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 pub struct App {
     sid_file: Option<SidFile>,
-    sid_player: Arc<Mutex<SidPlayer>>,
+    pub sid_player: Arc<Mutex<SidPlayer>>,
     status: String,
     json: Value,
     _buffer: SpscRb<i16>,

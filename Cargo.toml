@@ -22,6 +22,11 @@ egui_ltreeview = "0.2"
 serde = "1.0"
 serde_json = "1.0"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4.50"
+web-sys = "0.3.70"
+cpal = { version = "0.15", features = ["wasm-bindgen"] }
+
 [[bin]]
 name = "gui"
 path = "src/gui.rs"
