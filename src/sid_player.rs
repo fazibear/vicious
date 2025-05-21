@@ -1,4 +1,4 @@
-use log::debug;
+use log::{debug, info};
 use mos6510rs::{Registers, StatusFlags, CPU};
 use rb::{Producer, RbProducer};
 use resid::{SamplingMethod, Sid};
@@ -64,9 +64,10 @@ impl SidPlayer {
         self.cpu.write_slice(data, load_address);
 
         if self.play_address == 0 {
-            println!("play == 0");
+            info!("play address == 0");
             self.jump_subroutine(self.init_address, 0);
             self.play_address = self.cpu.read_word(0x0314);
+            info!("new play address == {}", &self.play_address);
         }
     }
 
