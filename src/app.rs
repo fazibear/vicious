@@ -61,6 +61,50 @@ impl App {
         self.sid_player.lock().play();
         Ok(())
     }
+
+    pub fn add_dir(&mut self, ui: &mut Ui, value: &Value) {
+        if let Some(vv) = value.get("type") {
+            match vv.as_str() {
+                Some("directory") => {
+                    let zero = Value::from(0);
+                    let empty = Vec::new();
+
+                    let contents = value
+                        .get("children")
+                        .unwrap_or(&zero)
+                        .as_array()
+                        .unwrap_or(&empty);
+
+                    if !contents.is_empty() {
+                        CollapsingHeader::new(value.get("name").unwrap().as_str().unwrap())
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                for v in contents {
+                                    self.add_dir(ui, v);
+                                }
+                            });
+                    }
+                }
+                Some("file") => {
+                    let name = value.get("name").unwrap().as_str().unwrap();
+                    let link = ui.link(name);
+                    if link.clicked() {
+                        let path = value.get("path").unwrap().as_str().unwrap();
+                        self.status = if let Ok(()) = self.load(path) {
+                            format!("[OK] {} loaded!", name)
+                        } else {
+                            format!("[ERROR] Can't load {}!", name)
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub fn show(&mut self, ui: &mut Ui) {
+        self.add_dir(ui, &self.json.to_owned());
+    }
 }
 
 impl eframe::App for App {
@@ -144,13 +188,21 @@ impl eframe::App for App {
             .min_height(40.0)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
-                    if ui.button("|◀").clicked() {};
-                    if ui.button("◀◀").clicked() {};
-                    if ui.button("▶").clicked() {};
-                    if ui.button("⏸").clicked() {};
-                    if ui.button("■").clicked() {};
-                    if ui.button("▶▶").clicked() {};
-                    if ui.button("▶|").clicked() {};
+                    if ui.button("◀◀").clicked() {
+                        self.sid_player.lock().prev()
+                    };
+                    if ui.button("▶").clicked() {
+                        self.sid_player.lock().play()
+                    };
+                    if ui.button("⏸").clicked() {
+                        self.sid_player.lock().pause()
+                    };
+                    if ui.button("■").clicked() {
+                        self.sid_player.lock().stop()
+                    };
+                    if ui.button("▶▶").clicked() {
+                        self.sid_player.lock().next()
+                    };
                     // let volume_slider = ui.add(
                     //     eframe::egui::Slider::new(&mut self.volume, (0.0 as f32)..=(1.2 as f32))
                     //         .logarithmic(false)
@@ -168,51 +220,5 @@ impl eframe::App for App {
                 self.show(ui);
             });
         });
-    }
-}
-
-impl App {
-    pub fn add_dir(&mut self, ui: &mut Ui, value: &Value) {
-        if let Some(vv) = value.get("type") {
-            match vv.as_str() {
-                Some("directory") => {
-                    let zero = Value::from(0);
-                    let empty = Vec::new();
-
-                    let contents = value
-                        .get("children")
-                        .unwrap_or(&zero)
-                        .as_array()
-                        .unwrap_or(&empty);
-
-                    if !contents.is_empty() {
-                        CollapsingHeader::new(value.get("name").unwrap().as_str().unwrap())
-                            .default_open(false)
-                            .show(ui, |ui| {
-                                for v in contents {
-                                    self.add_dir(ui, v);
-                                }
-                            });
-                    }
-                }
-                Some("file") => {
-                    let name = value.get("name").unwrap().as_str().unwrap();
-                    let link = ui.link(name);
-                    if link.clicked() {
-                        let path = value.get("path").unwrap().as_str().unwrap();
-                        self.status = if let Ok(()) = self.load(path) {
-                            format!("[OK] {} loaded!", name)
-                        } else {
-                            format!("[ERROR] Can't load {}!", name)
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-
-    pub fn show(&mut self, ui: &mut Ui) {
-        self.add_dir(ui, &self.json.to_owned());
     }
 }

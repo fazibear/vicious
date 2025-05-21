@@ -108,12 +108,12 @@ pub fn print_info(sid_file: &SidFile) {
 }
 
 pub fn print_sound_info(sound: &Output) -> Result<()> {
-    eprintln!("Output device: {}", sound.device.name()?);
+    eprintln!("Output device: {}", sound.device().name()?);
     eprintln!(
         "Supported stream config: {:?}",
-        sound.device.default_output_config()?
+        sound.device().default_output_config()?
     );
-    eprintln!("Stream config: {:?}", sound.config);
+    eprintln!("Stream config: {:?}", sound.stream_config());
 
     Ok(())
 }

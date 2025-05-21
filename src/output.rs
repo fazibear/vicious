@@ -9,10 +9,10 @@ use log::info;
 use rb::{Consumer, RbConsumer};
 
 pub struct Output {
-    pub device: Device,
-    pub config: StreamConfig,
-    pub stream: Stream,
-    pub sample_rate: u32,
+    device: Device,
+    config: StreamConfig,
+    stream: Stream,
+    sample_rate: u32,
 }
 
 impl Output {
@@ -34,6 +34,7 @@ impl Output {
                 let readed = consumer.read(&mut tmp[..]).unwrap_or(0);
                 info!("{} samples received", readed == data.len() / 2);
                 if readed < data.len() / 2 {
+                    data.fill(0.0);
                     return;
                 }
                 let new = tmp
@@ -74,13 +75,15 @@ impl Output {
         self.sample_rate
     }
 
-    pub fn play(&mut self) -> Result<()> {
-        self.stream.play()?;
-        Ok(())
+    pub fn device(&self) -> &Device {
+        &self.device
     }
 
-    pub fn pause(&mut self) -> Result<()> {
-        self.stream.pause()?;
-        Ok(())
+    pub fn stream_config(&self) -> &StreamConfig {
+        &self.config
+    }
+
+    pub fn stream(&mut self) -> &mut Stream {
+        &mut self.stream
     }
 }

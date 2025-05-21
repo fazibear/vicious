@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::info;
 use mos6510rs::{Registers, StatusFlags, CPU};
 use rb::{Producer, RbProducer};
 use resid::{SamplingMethod, Sid};
@@ -69,6 +69,9 @@ impl SidPlayer {
             self.play_address = self.cpu.read_word(0x0314);
             info!("new play address == {}", &self.play_address);
         }
+
+        self.change_track(self.current_song);
+        self.playing = true;
     }
 
     const BUFFER_SIZE: usize = 2i32.pow(13) as usize;
@@ -99,15 +102,39 @@ impl SidPlayer {
     }
 
     pub fn change_track(&mut self, track: u16) {
-        self.playing = false;
         if track > 0 && track <= self.songs {
             self.cpu.reset();
             self.jump_subroutine(self.init_address, (track - 1) as u8);
-            self.playing = true;
         }
     }
 
     pub fn play(&mut self) {
+        self.playing = true;
+    }
+
+    pub fn stop(&mut self) {
+        self.playing = false;
+        self.change_track(self.current_song);
+    }
+
+    pub fn pause(&mut self) {
+        self.playing = false;
+    }
+
+    pub fn next(&mut self) {
+        self.current_song = self.current_song.wrapping_add(1);
+        if self.current_song > self.songs {
+            self.current_song = 1;
+        }
+        self.change_track(self.current_song);
+    }
+
+    pub fn prev(&mut self) {
+        self.current_song = self.current_song.wrapping_sub(1);
+        if self.current_song > self.songs || self.current_song == 0 {
+            self.current_song = self.songs;
+        }
+
         self.change_track(self.current_song);
     }
 
