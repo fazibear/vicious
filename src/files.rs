@@ -25,6 +25,8 @@ pub use fs::{files, open};
 #[cfg(target_arch = "wasm32")]
 mod fetch {
     use serde_json::Value;
+    use wasm_bindgen_futures::JsFuture;
+    use web_sys::js_sys::Uint8Array;
     use web_sys::wasm_bindgen::JsCast;
     use web_sys::{console, Request, RequestInit, RequestMode, Response};
 
@@ -38,12 +40,22 @@ mod fetch {
         opts.set_method("GET");
         opts.set_mode(RequestMode::Cors);
 
-        let request = Request::new_with_str_and_init(&filename, &opts).unwrap();
         let window = web_sys::window().unwrap();
-        //let resp_value = window.fetch_with_request(&request);
-        //let resp: Response = resp_value.dyn_into().unwrap();
-        console::log_1(&"hello".into());
-        //let bin: Vec<u8> = resp.text().unwrap().array_buffer();
+        let request = Request::new_with_str_and_init(&filename, &opts).unwrap();
+
+        wasm_bindgen_futures::spawn_local(async move {
+            let resp_value = JsFuture::from(window.fetch_with_request(&request))
+                .await
+                .expect("resp");
+            let resp: Response = resp_value.dyn_into().expect("respons");
+            let buffer = JsFuture::from(resp.array_buffer().unwrap())
+                .await
+                .expect("val");
+
+            let vec = Uint8Array::new(&buffer).to_vec();
+        });
+
+        // wasm_bindgen_futures::future_to_promise(window.fetch_with_request(&request)).await;
 
         Vec::new()
     }
