@@ -1,28 +1,25 @@
 mod output;
 mod sid_player;
 
-use output::Output;
-use rb::{SpscRb, RB};
-use sid_player::SidPlayer;
-
 use anyhow::Result;
 use cpal::traits::DeviceTrait;
 use inline_colorization::*;
+use output::Output;
+use rb::{SpscRb, RB};
 use sid_file::SidFile;
+use sid_player::SidPlayer;
+use std::time::{Duration, Instant};
 
 fn main() -> Result<()> {
     pretty_env_logger::init();
     let filename = std::env::args().nth(1).unwrap_or("".to_string());
     let path = std::path::Path::new(&filename);
     let data = std::fs::read(path)?;
-
     let sid_file = SidFile::parse(&data)?;
-
     let buffer: SpscRb<i16> = SpscRb::new(44100 * 2);
-
     let output = Output::new(buffer.consumer())?;
-
     let mut sid_player = SidPlayer::new(buffer.producer(), output.sample_rate());
+    let mut last_step = Instant::now();
 
     sid_player.load_data(
         &sid_file.data,
@@ -38,6 +35,12 @@ fn main() -> Result<()> {
     print_sound_info(&output)?;
 
     let test_tread = std::thread::spawn(move || loop {
+        if last_step.elapsed() < Duration::from_millis(20) {
+            continue;
+        }
+
+        last_step = Instant::now();
+
         sid_player.step();
     });
 
