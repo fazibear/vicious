@@ -10,22 +10,22 @@ mos6510rs = "0.2"
 anyhow = "1.0"
 #resid-rs = { git = "https://github.com/fazibear/resid-rs", branch = "fix-overflows" }
 resid-rs = "1.1"
-cpal = "0.15"
+cpal = "0.16"
 ringbuf = "0.4"
 inline_colorization = "0.1.6"
-eframe = "0.31"
+eframe = "0.32"
 #egui_extras = { version = "0.31", features = ["image"]}
 log = "0.4"
 pretty_env_logger = "0.5"
 rb = "0.4"
-egui_ltreeview = "0.2"
+egui_ltreeview = "0.5"
 serde = "1.0"
 serde_json = "1.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.50"
 web-sys = { version = "0.3", features = ['Headers', 'Request', 'RequestInit', 'RequestMode', 'Response', 'Window'] }
-cpal = { version = "0.15", features = ["wasm-bindgen"] }
+cpal = { version = "0.16", features = ["wasm-bindgen"] }
 
 [[bin]]
 name = "gui"
