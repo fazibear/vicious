@@ -4,8 +4,7 @@ Ultimate SID Tunes player written in Rust using Egui.
 
 Goals:
 - Can play SID files without glitches
-- Compile to the web
-- AI (beacuse it's everywhere ;)
+- Compile to the web (almost ;)
 
 ## Setup
 
